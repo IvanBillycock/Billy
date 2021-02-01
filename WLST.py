@@ -2,8 +2,8 @@ import subprocess
 import paramiko
 from urlparse import urlparse
 
-adminUser="weblogic"
-adminPassword="Oracle33"
+adminUser="*******"
+adminPassword="******"
 adminUrl="t3://eb-exp-demo-ufos.otr.ru:7001"
 applicationName='sufd-server'
 targetServers="test_ms_dir"
