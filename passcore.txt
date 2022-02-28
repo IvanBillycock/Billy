@@ -1,0 +1,40 @@
+- name: Git clone passcore
+  ansible.builtin.git:
+    repo: https://github.com/unosquare/passcore.git
+    dest: /home/{{ ansible_user }}/passcore
+
+- name: Replace string
+  lineinfile:
+    path: /home/{{ ansible_user }}/passcore/Dockerfile
+    search_string: 'RUN dotnet publish -c Release -o /app /p:PASSCORE_PROVIDER=LDAP --no-restore'
+    line: RUN dotnet publish -c Release -o /app /p:PASSCORE_PROVIDER=LDAP
+
+- name: Delete string
+  lineinfile:
+    path: /home/{{ ansible_user }}/passcore/Dockerfile
+    search_string: 'RUN dotnet restore'
+    state: absent
+
+
+- name: Build image
+  community.docker.docker_image:
+    name: passcore
+    build:
+      path: /home/{{ ansible_user }}/passcore       
+    source: build
+
+- name: Run passcore
+  docker_container:
+    name: passcore
+    image: passcore:latest
+    state: started
+    env:
+      AppSettings__LdapSearchBase: "OU={{ domain }},DC={{ (realm | split('.'))[0] }},DC={{ (realm | split('.'))[1] }}"
+      AppSettings__LdapSecureSocketLayer: "true"
+      AppSettings__LdapPassword: "P@ssw0rd" #"{{ password }}"
+      AppSettings__LdapIgnoreTlsValidation: "true"
+      AppSettings__LdapIgnoreTlsErrors: "true"
+      AppSettings__LdapHostnames__0: "{{ ansible_host }}"
+      AppSettings__LdapPort: "636"
+      AppSettings__LdapUsername: "CN=ldap,OU={{ domain }},DC={{ (realm | split('.'))[0] }},DC={{ (realm | split('.'))[1] }}"        
+    restart_policy: "always"
